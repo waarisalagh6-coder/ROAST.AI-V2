@@ -1,0 +1,1285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ROAST.EXE — Digital Obliteration Suite</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Bebas+Neue&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg: #030308;
+            --panel: rgba(5, 5, 18, 0.92);
+            --border: #1a1a3e;
+            --accent: #ff2a5f;
+            --accent2: #ff6b00;
+            --cyan: #00e5ff;
+            --green: #39ff14;
+            --text: #e0e0ff;
+            --muted: #555577;
+            --glow-r: rgba(255, 42, 95, 0.4);
+            --glow-c: rgba(0, 229, 255, 0.3);
+            --glow-g: rgba(57, 255, 20, 0.3);
+
+            --mild-c: #39ff14;
+            --goofy-c: #00e5ff;
+            --normal-c: #a855f7;
+            --brutal-c: #ff6b00;
+            --nuclear-c: #ff2a5f;
+            --god-c: #ffffff;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Rajdhani', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* ── BACKGROUND ── */
+        #bgCanvas { position: fixed; inset: 0; z-index: 0; opacity: 0.18; }
+
+        .grid-overlay {
+            position: fixed; inset: 0; z-index: 0; pointer-events: none;
+            background-image:
+                linear-gradient(rgba(0,229,255,0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0,229,255,0.03) 1px, transparent 1px);
+            background-size: 40px 40px;
+        }
+
+        .vignette {
+            position: fixed; inset: 0; z-index: 1; pointer-events: none;
+            background: radial-gradient(ellipse at center, transparent 40%, rgba(3,3,8,0.85) 100%);
+        }
+
+        .scanlines {
+            position: fixed; inset: 0; z-index: 2; pointer-events: none; opacity: 0.04;
+            background: repeating-linear-gradient(0deg, transparent, transparent 2px, #000 2px, #000 4px);
+        }
+
+        /* ── NAV ── */
+        .navbar {
+            position: sticky; top: 0; z-index: 500;
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 0.9rem 2.5rem;
+            background: rgba(3,3,8,0.95);
+            border-bottom: 1px solid var(--border);
+            backdrop-filter: blur(20px);
+        }
+
+        .logo {
+            display: flex; align-items: center; gap: 0.8rem;
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 1.8rem; letter-spacing: 3px;
+            color: var(--accent);
+            text-shadow: 0 0 20px var(--glow-r), 0 0 40px var(--glow-r);
+        }
+
+        .logo .logo-dot { color: var(--cyan); }
+
+        .nav-right { display: flex; align-items: center; gap: 0.8rem; }
+
+        .user-info { display: flex; align-items: center; gap: 0.8rem; }
+
+        .username-badge {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.85rem; color: var(--cyan);
+            border: 1px solid rgba(0,229,255,0.3);
+            padding: 0.3rem 0.8rem;
+            background: rgba(0,229,255,0.05);
+        }
+
+        .token-pill {
+            display: flex; align-items: center; gap: 0.4rem;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.85rem; font-weight: 700;
+            color: var(--green);
+            border: 1px solid rgba(57,255,20,0.3);
+            padding: 0.3rem 0.8rem;
+            background: rgba(57,255,20,0.05);
+            text-shadow: 0 0 10px var(--glow-g);
+        }
+
+        .nav-btn {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.8rem; font-weight: 600;
+            background: transparent;
+            border: 1px solid var(--muted);
+            color: var(--muted);
+            padding: 0.45rem 1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-transform: uppercase; letter-spacing: 1px;
+        }
+        .nav-btn:hover { border-color: var(--cyan); color: var(--cyan); box-shadow: 0 0 10px var(--glow-c); }
+        .nav-btn.danger { border-color: var(--accent); color: var(--accent); }
+        .nav-btn.danger:hover { background: var(--accent); color: #000; box-shadow: 0 0 15px var(--glow-r); }
+        .nav-btn.gift-btn { border-color: var(--green); color: var(--green); }
+        .nav-btn.gift-btn:hover { background: var(--green); color: #000; box-shadow: 0 0 15px var(--glow-g); }
+
+        .hidden { display: none !important; }
+
+        /* ── LAYOUT ── */
+        .container {
+            position: relative; z-index: 10;
+            max-width: 780px; margin: 0 auto;
+            padding: 3rem 2rem;
+            display: flex; flex-direction: column; gap: 2rem;
+        }
+
+        .page-header { text-align: center; margin-bottom: 1rem; }
+
+        .page-header h1 {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: clamp(3rem, 8vw, 5.5rem);
+            letter-spacing: 6px;
+            line-height: 1;
+            background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 50%, var(--cyan) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            filter: drop-shadow(0 0 30px rgba(255,42,95,0.5));
+        }
+
+        .page-header .sub {
+            font-family: 'Share Tech Mono', monospace;
+            color: var(--muted); font-size: 0.85rem;
+            letter-spacing: 4px; margin-top: 0.5rem;
+            text-transform: uppercase;
+        }
+
+        /* ── PANELS ── */
+        .panel {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            padding: 2rem;
+            position: relative;
+            backdrop-filter: blur(20px);
+        }
+
+        .panel::before {
+            content: '';
+            position: absolute; top: 0; left: 0; right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+            opacity: 0.4;
+        }
+
+        .panel-title {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.75rem; color: var(--cyan);
+            letter-spacing: 3px; text-transform: uppercase;
+            margin-bottom: 1.5rem;
+            display: flex; align-items: center; gap: 0.5rem;
+        }
+        .panel-title::before {
+            content: '▶';
+            color: var(--accent);
+            font-size: 0.6rem;
+        }
+
+        /* ── LEVEL CARDS ── */
+        .level-grid {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 0.6rem;
+            margin-bottom: 2rem;
+        }
+
+        .level-card { cursor: pointer; }
+        .level-card input[type="radio"] { display: none; }
+
+        .level-face {
+            border: 1px solid var(--border);
+            background: rgba(0,0,0,0.4);
+            padding: 0.8rem 0.4rem;
+            display: flex; flex-direction: column;
+            align-items: center; gap: 0.5rem;
+            transition: all 0.25s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .level-face::after {
+            content: '';
+            position: absolute; inset: 0;
+            opacity: 0;
+            transition: opacity 0.25s;
+        }
+
+        .level-card input:checked + .level-face { transform: translateY(-3px); }
+
+        .level-icon { font-size: 1.4rem; transition: all 0.25s; }
+        .level-name {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.65rem; text-transform: uppercase; letter-spacing: 1px;
+        }
+        .level-cost {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.7rem; opacity: 0.7;
+        }
+
+        /* Per-tier colors */
+        .mild-card .level-face { --lc: var(--mild-c); }
+        .goofy-card .level-face { --lc: var(--goofy-c); }
+        .normal-card .level-face { --lc: var(--normal-c); }
+        .brutal-card .level-face { --lc: var(--brutal-c); }
+        .nuclear-card .level-face { --lc: var(--nuclear-c); }
+        .god-card .level-face { --lc: var(--god-c); }
+
+        .level-card .level-face:hover,
+        .level-card input:checked + .level-face {
+            border-color: var(--lc);
+            background: rgba(0,0,0,0.7);
+            box-shadow: 0 0 20px rgba(255,255,255,0.05), inset 0 0 15px rgba(0,0,0,0.3);
+        }
+        .level-card input:checked + .level-face .level-icon,
+        .level-card .level-face:hover .level-icon {
+            color: var(--lc);
+            filter: drop-shadow(0 0 8px var(--lc));
+        }
+        .level-card input:checked + .level-face .level-name { color: var(--lc); }
+
+        /* ── INPUTS ── */
+        .input-row { display: flex; gap: 1rem; margin-bottom: 1.2rem; }
+        .input-wrap { position: relative; flex: 1; }
+
+        .input-wrap i {
+            position: absolute; left: 1rem; top: 50%;
+            transform: translateY(-50%);
+            color: var(--muted); font-size: 0.9rem;
+            pointer-events: none; z-index: 1;
+        }
+
+        .field {
+            width: 100%;
+            padding: 0.9rem 1rem 0.9rem 2.8rem;
+            background: rgba(0,0,0,0.5);
+            border: 1px solid var(--border);
+            color: var(--text);
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.95rem;
+            outline: none;
+            transition: all 0.2s;
+            -webkit-appearance: none;
+        }
+        .field::placeholder { color: var(--muted); }
+        .field:focus {
+            border-color: var(--cyan);
+            box-shadow: 0 0 15px rgba(0,229,255,0.15);
+            background: rgba(0,229,255,0.03);
+        }
+        .field option { background: #0a0a18; }
+
+        .input-wrap.full { flex: none; width: 100%; margin-bottom: 1.2rem; }
+
+        /* ── SUBMIT ── */
+        .submit-btn {
+            width: 100%;
+            padding: 1.1rem;
+            background: transparent;
+            border: 1px solid var(--accent);
+            color: var(--accent);
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 1.4rem;
+            letter-spacing: 4px;
+            cursor: pointer;
+            transition: all 0.25s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .submit-btn::before {
+            content: '';
+            position: absolute; inset: 0;
+            background: var(--accent);
+            transform: translateX(-101%);
+            transition: transform 0.25s;
+            z-index: -1;
+        }
+        .submit-btn:hover {
+            color: #000;
+            box-shadow: 0 0 30px var(--glow-r);
+        }
+        .submit-btn:hover::before { transform: translateX(0); }
+
+        /* ── ERROR ── */
+        .err-msg {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.8rem; color: var(--accent);
+            border: 1px solid rgba(255,42,95,0.3);
+            background: rgba(255,42,95,0.08);
+            padding: 0.7rem 1rem;
+            margin-top: 0.8rem;
+            text-align: center;
+        }
+
+        /* ── HALL OF SHAME ── */
+        .shame-grid {
+            display: flex; flex-direction: column; gap: 0.5rem;
+            max-height: 220px; overflow-y: auto;
+        }
+        .shame-grid::-webkit-scrollbar { width: 3px; }
+        .shame-grid::-webkit-scrollbar-thumb { background: var(--border); }
+
+        .shame-item {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 0.7rem 1rem;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid var(--border);
+            border-left: 3px solid var(--accent);
+            transition: all 0.2s;
+        }
+        .shame-item:hover { background: rgba(255,42,95,0.05); }
+        .shame-name {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.9rem;
+        }
+        .shame-tier {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.7rem; letter-spacing: 2px;
+            padding: 0.2rem 0.6rem;
+            border: 1px solid currentColor;
+            opacity: 0.8;
+        }
+        .shame-time { font-size: 0.75rem; color: var(--muted); }
+        .no-victims {
+            font-family: 'Share Tech Mono', monospace;
+            color: var(--muted); font-size: 0.85rem;
+            text-align: center; padding: 1.5rem 0;
+        }
+
+        /* ── ANALYSIS ── */
+        .analysis-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .term-box {
+            background: #000;
+            border: 1px solid rgba(57,255,20,0.15);
+            padding: 1rem;
+            height: 200px;
+            overflow-y: auto;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.72rem;
+            line-height: 1.6;
+            scroll-behavior: smooth;
+        }
+        .term-box::-webkit-scrollbar { width: 2px; }
+        .term-box::-webkit-scrollbar-thumb { background: var(--green); }
+
+        .term-line { margin-bottom: 0.2rem; }
+        .term-line.ok { color: var(--green); }
+        .term-line.err { color: var(--accent); }
+        .term-line.warn { color: #ffcc00; }
+        .term-line.info { color: var(--cyan); }
+
+        .sources-list { display: flex; flex-direction: column; gap: 1rem; }
+
+        .source-row { }
+        .source-meta {
+            display: flex; justify-content: space-between;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.75rem; margin-bottom: 0.35rem;
+        }
+        .source-name { display: flex; align-items: center; gap: 0.5rem; }
+        .source-pct { font-weight: 700; }
+
+        .prog-track {
+            height: 4px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.08);
+            position: relative; overflow: hidden;
+        }
+        .prog-fill {
+            height: 100%; width: 0%;
+            transition: width 0.3s ease;
+            position: relative;
+        }
+        .prog-fill::after {
+            content: '';
+            position: absolute; right: 0; top: 0;
+            width: 20px; height: 100%;
+            background: rgba(255,255,255,0.6);
+            filter: blur(3px);
+        }
+
+        .master-status {
+            text-align: center;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.85rem;
+            color: var(--cyan);
+            padding: 1rem;
+            border: 1px dashed rgba(0,229,255,0.2);
+            background: rgba(0,229,255,0.03);
+            animation: blink 1.5s infinite;
+        }
+
+        /* ── RESULT ── */
+        .result-panel { border-color: rgba(255,42,95,0.3); }
+        .result-panel::before { background: linear-gradient(90deg, transparent, var(--accent), transparent); }
+
+        .result-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .result-tier-badge {
+            display: inline-block;
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 2.5rem;
+            letter-spacing: 6px;
+            padding: 0.2rem 2rem;
+            border: 1px solid var(--accent);
+            color: var(--accent);
+            text-shadow: 0 0 20px var(--glow-r);
+            box-shadow: 0 0 30px rgba(255,42,95,0.2), inset 0 0 30px rgba(255,42,95,0.05);
+        }
+
+        .roast-box {
+            background: rgba(0,0,0,0.6);
+            border: 1px solid rgba(255,42,95,0.2);
+            padding: 2rem;
+            min-height: 140px;
+            margin-bottom: 1.5rem;
+            position: relative;
+        }
+
+        #roastOutput {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1.2rem;
+            line-height: 1.7;
+            color: var(--text);
+            font-weight: 600;
+        }
+
+        .roast-cursor {
+            display: inline-block;
+            width: 3px; height: 1.1em;
+            background: var(--accent);
+            vertical-align: middle;
+            animation: blinkCursor 0.8s infinite;
+            margin-left: 2px;
+        }
+
+        .reset-btn {
+            width: 100%;
+            padding: 1rem;
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--muted);
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-transform: uppercase; letter-spacing: 2px;
+        }
+        .reset-btn:hover { border-color: var(--cyan); color: var(--cyan); }
+
+        /* ── MODALS ── */
+        .modal-overlay {
+            position: fixed; inset: 0; z-index: 1000;
+            background: rgba(3,3,8,0.85);
+            backdrop-filter: blur(12px);
+            display: flex; align-items: center; justify-content: center;
+            animation: fadeIn 0.2s;
+        }
+
+        .modal-box {
+            background: rgba(5,5,18,0.98);
+            border: 1px solid var(--border);
+            width: 90%; max-width: 440px;
+            padding: 2rem;
+            position: relative;
+            animation: slideUp 0.25s;
+        }
+        .modal-box::before {
+            content: '';
+            position: absolute; top: 0; left: 0; right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+        }
+
+        .modal-head {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 1.5rem;
+        }
+        .modal-head h3 {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 1.6rem; letter-spacing: 3px;
+            color: var(--cyan);
+        }
+        .close-btn {
+            background: none; border: none;
+            color: var(--muted); font-size: 1.2rem;
+            cursor: pointer; transition: color 0.2s;
+        }
+        .close-btn:hover { color: var(--accent); }
+
+        .modal-sub {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.8rem; color: var(--muted);
+            margin-bottom: 1.5rem; line-height: 1.5;
+        }
+
+        .modal-submit {
+            width: 100%;
+            padding: 1rem;
+            background: transparent;
+            border: 1px solid var(--cyan);
+            color: var(--cyan);
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.9rem; letter-spacing: 2px;
+            cursor: pointer; transition: all 0.2s;
+            text-transform: uppercase;
+        }
+        .modal-submit:hover { background: var(--cyan); color: #000; box-shadow: 0 0 20px var(--glow-c); }
+        .modal-submit.admin-s { border-color: var(--accent); color: var(--accent); }
+        .modal-submit.admin-s:hover { background: var(--accent); color: #000; box-shadow: 0 0 20px var(--glow-r); }
+
+        .success-msg {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.8rem; color: var(--green);
+            border: 1px solid rgba(57,255,20,0.3);
+            background: rgba(57,255,20,0.05);
+            padding: 0.7rem; margin-top: 0.8rem; text-align: center;
+        }
+
+        .admin-actions { display: flex; gap: 1rem; margin-bottom: 1.2rem; }
+        .admin-actions select {
+            flex: 1; background: rgba(0,0,0,0.5);
+            border: 1px solid var(--border); color: var(--text);
+            font-family: 'Share Tech Mono', monospace; padding: 0 1rem;
+            outline: none;
+        }
+
+        /* ── TOAST ── */
+        .toast {
+            position: fixed; bottom: 1.5rem; right: 1.5rem;
+            z-index: 2000;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.85rem;
+            padding: 0.8rem 1.5rem;
+            background: rgba(5,5,18,0.98);
+            border: 1px solid var(--cyan);
+            color: var(--cyan);
+            box-shadow: 0 0 20px var(--glow-c);
+            animation: slideUp 0.3s;
+            max-width: 320px;
+        }
+
+        /* ── ANIMATIONS ── */
+        @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+        @keyframes blinkCursor { 0%,100%{opacity:1} 50%{opacity:0} }
+        @keyframes fadeIn { from{opacity:0} to{opacity:1} }
+        @keyframes slideUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes glitch {
+            0%{transform:translate(0)} 15%{transform:translate(-3px,2px);filter:hue-rotate(90deg)}
+            30%{transform:translate(3px,-2px)} 45%{transform:translate(-2px,3px);filter:hue-rotate(-90deg)}
+            60%{transform:translate(2px,-3px)} 75%{transform:translate(-3px,1px)}
+            90%{transform:translate(3px,-1px)} 100%{transform:translate(0)}
+        }
+        @keyframes shake {
+            0%,100%{transform:translateX(0)}
+            10%,30%,50%,70%,90%{transform:translateX(-6px)}
+            20%,40%,60%,80%{transform:translateX(6px)}
+        }
+        @keyframes pulseRed {
+            0%,100%{box-shadow:0 0 20px rgba(255,42,95,0.2)}
+            50%{box-shadow:0 0 60px rgba(255,42,95,0.6)}
+        }
+
+        .glitch-text { animation: glitch 0.15s infinite; }
+        .shake-body { animation: shake 0.5s both; }
+        .pulse-panel { animation: pulseRed 1.5s infinite; }
+
+        /* ── RESPONSIVE ── */
+        @media (max-width: 600px) {
+            .navbar { padding: 0.8rem 1rem; }
+            .container { padding: 1.5rem 1rem; }
+            .level-grid { grid-template-columns: repeat(3, 1fr); }
+            .input-row { flex-direction: column; }
+            .analysis-grid { grid-template-columns: 1fr; }
+            .page-header h1 { font-size: 2.8rem; }
+        }
+
+        /* ── AI LOADING INDICATOR ── */
+        .ai-loading {
+            display: flex; align-items: center; gap: 0.8rem;
+            font-family: 'Share Tech Mono', monospace; font-size: 0.85rem;
+            color: var(--cyan); padding: 1rem;
+        }
+        .ai-dots { display: flex; gap: 4px; }
+        .ai-dots span {
+            width: 6px; height: 6px;
+            background: var(--cyan);
+            border-radius: 50%;
+            animation: dotBounce 1.2s infinite;
+        }
+        .ai-dots span:nth-child(2) { animation-delay: 0.2s; }
+        .ai-dots span:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes dotBounce {
+            0%,80%,100%{transform:scale(0.6);opacity:0.4}
+            40%{transform:scale(1);opacity:1}
+        }
+    </style>
+</head>
+<body>
+    <canvas id="bgCanvas"></canvas>
+    <div class="grid-overlay"></div>
+    <div class="vignette"></div>
+    <div class="scanlines"></div>
+
+    <!-- NAV -->
+    <nav class="navbar">
+        <div class="logo">ROAST<span class="logo-dot">.</span>EXE</div>
+        <div class="nav-right">
+            <div id="userInfo" class="user-info hidden">
+                <span class="username-badge" id="navUser"></span>
+                <span class="token-pill"><i class="fa-solid fa-microchip"></i> <span id="navTokens">0</span></span>
+                <button id="dailyRewardBtn" class="nav-btn gift-btn" title="Daily Reward"><i class="fa-solid fa-gift"></i></button>
+                <button id="logoutBtn" class="nav-btn danger" title="Logout"><i class="fa-solid fa-power-off"></i></button>
+            </div>
+            <button id="loginModalBtn" class="nav-btn">Login / Register</button>
+            <button id="adminModalBtn" class="nav-btn danger" title="Admin"><i class="fa-solid fa-terminal"></i></button>
+        </div>
+    </nav>
+
+    <main class="container">
+        <header class="page-header">
+            <h1>DIGITAL OBLITERATION</h1>
+            <p class="sub">// AI-POWERED ROAST ENGINE v2.0 — HANDLE WITH CAUTION //</p>
+        </header>
+
+        <!-- INPUT PANEL -->
+        <section id="inputBox" class="panel">
+            <div class="panel-title">Select Tier &amp; Target</div>
+
+            <div class="level-grid">
+                <label class="level-card mild-card">
+                    <input type="radio" name="roastLevel" value="mild">
+                    <div class="level-face">
+                        <i class="fa-solid fa-mug-hot level-icon" style="color:var(--mild-c)"></i>
+                        <span class="level-name">Mild</span>
+                        <span class="level-cost">5 ⬡</span>
+                    </div>
+                </label>
+                <label class="level-card goofy-card">
+                    <input type="radio" name="roastLevel" value="goofy" checked>
+                    <div class="level-face">
+                        <i class="fa-regular fa-face-laugh-squint level-icon" style="color:var(--goofy-c)"></i>
+                        <span class="level-name">Goofy</span>
+                        <span class="level-cost">10 ⬡</span>
+                    </div>
+                </label>
+                <label class="level-card normal-card">
+                    <input type="radio" name="roastLevel" value="normal">
+                    <div class="level-face">
+                        <i class="fa-solid fa-face-meh level-icon" style="color:var(--normal-c)"></i>
+                        <span class="level-name">Normal</span>
+                        <span class="level-cost">20 ⬡</span>
+                    </div>
+                </label>
+                <label class="level-card brutal-card">
+                    <input type="radio" name="roastLevel" value="brutal">
+                    <div class="level-face">
+                        <i class="fa-solid fa-fire-flame-curved level-icon" style="color:var(--brutal-c)"></i>
+                        <span class="level-name">Brutal</span>
+                        <span class="level-cost">50 ⬡</span>
+                    </div>
+                </label>
+                <label class="level-card nuclear-card">
+                    <input type="radio" name="roastLevel" value="nuclear">
+                    <div class="level-face">
+                        <i class="fa-solid fa-radiation level-icon" style="color:var(--nuclear-c)"></i>
+                        <span class="level-name">Nuclear</span>
+                        <span class="level-cost">75 ⬡</span>
+                    </div>
+                </label>
+                <label class="level-card god-card">
+                    <input type="radio" name="roastLevel" value="god">
+                    <div class="level-face">
+                        <i class="fa-solid fa-skull-crossbones level-icon" style="color:var(--god-c)"></i>
+                        <span class="level-name">GOD</span>
+                        <span class="level-cost">100 ⬡</span>
+                    </div>
+                </label>
+            </div>
+
+            <div class="input-row">
+                <div class="input-wrap">
+                    <i class="fa-solid fa-list-ol"></i>
+                    <input class="field" type="number" id="linesAmount" placeholder="Lines (1-5)" min="1" max="5" value="2">
+                </div>
+                <div class="input-wrap">
+                    <i class="fa-solid fa-gauge-high"></i>
+                    <select class="field" id="typingSpeed">
+                        <option value="50">Slow</option>
+                        <option value="25" selected>Normal</option>
+                        <option value="8">Fast</option>
+                        <option value="0">Instant</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="input-wrap full">
+                <i class="fa-solid fa-crosshairs"></i>
+                <input class="field" type="text" id="targetName" placeholder="Target Name or @handle" autocomplete="off" required>
+            </div>
+
+            <button class="submit-btn" id="submitBtn">
+                ▶ INITIATE DESTRUCTION SEQUENCE
+            </button>
+            <div id="tokenError" class="err-msg hidden">⚠ INSUFFICIENT TOKENS — Acquire more or lower tier.</div>
+        </section>
+
+        <!-- HALL OF SHAME -->
+        <section class="panel">
+            <div class="panel-title"><i class="fa-solid fa-skull"></i> Hall of Shame</div>
+            <div id="shameList" class="shame-grid">
+                <p class="no-victims">// NO VICTIMS LOGGED — INITIATE FIRST STRIKE //</p>
+            </div>
+        </section>
+
+        <!-- ANALYSIS -->
+        <section id="analysisBox" class="panel hidden">
+            <div class="panel-title"><i class="fa-solid fa-satellite-dish"></i> Intelligence Gathering</div>
+            <div class="analysis-grid">
+                <div class="sources-list" id="sourcesContainer"></div>
+                <div class="term-box" id="terminalOutput"></div>
+            </div>
+            <div class="master-status" id="masterStatus">Connecting to global networks...</div>
+        </section>
+
+        <!-- RESULT -->
+        <section id="resultBox" class="panel result-panel hidden">
+            <div class="result-header">
+                <div class="result-tier-badge" id="resultTierTitle">DESTRUCTION</div>
+            </div>
+            <div class="roast-box">
+                <p id="roastOutput"></p>
+                <span class="roast-cursor" id="roastCursor" style="display:none"></span>
+            </div>
+            <button class="reset-btn" id="resetBtn">↺ OBLITERATE ANOTHER TARGET</button>
+        </section>
+    </main>
+
+    <!-- LOGIN MODAL -->
+    <div id="loginModal" class="modal-overlay hidden">
+        <div class="modal-box">
+            <div class="modal-head">
+                <h3>System Access</h3>
+                <button class="close-btn close-modal"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="modal-sub">// New users receive 500 tokens on initialization. No password required. //</p>
+            <form id="loginForm">
+                <div class="input-wrap" style="margin-bottom:1.2rem">
+                    <i class="fa-solid fa-user"></i>
+                    <input class="field" type="text" id="loginUsername" placeholder="Username" required>
+                </div>
+                <button type="submit" class="modal-submit">ACCESS SYSTEM</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- ADMIN MODAL -->
+    <div id="adminModal" class="modal-overlay hidden">
+        <div class="modal-box">
+            <div class="modal-head">
+                <h3>Admin Gateway</h3>
+                <button class="close-btn close-modal"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form id="adminLoginForm">
+                <div class="input-wrap" style="margin-bottom:1rem">
+                    <i class="fa-solid fa-user-shield"></i>
+                    <input class="field" type="text" id="adminUser" placeholder="Admin Username" required>
+                </div>
+                <div class="input-wrap" style="margin-bottom:1.2rem">
+                    <i class="fa-solid fa-key"></i>
+                    <input class="field" type="password" id="adminPass" placeholder="Admin Password" required>
+                </div>
+                <button type="submit" class="modal-submit admin-s">VERIFY CREDENTIALS</button>
+                <div id="adminError" class="err-msg hidden">⚠ Invalid credentials.</div>
+            </form>
+            <div id="adminDashboard" class="hidden" style="margin-top:1rem">
+                <p class="modal-sub" style="color:var(--cyan)">// Token manipulation interface active. //</p>
+                <form id="tokenForm">
+                    <div class="input-wrap" style="margin-bottom:1rem">
+                        <i class="fa-solid fa-user"></i>
+                        <input class="field" type="text" id="targetUserManage" placeholder="Target Username" required>
+                    </div>
+                    <div class="admin-actions">
+                        <select id="tokenAction" class="field" style="padding-left:1rem">
+                            <option value="set">Set To</option>
+                            <option value="add">Add</option>
+                        </select>
+                        <div class="input-wrap" style="flex:1">
+                            <i class="fa-solid fa-coins"></i>
+                            <input class="field" type="number" id="tokenAmount" placeholder="Amount" min="0" required>
+                        </div>
+                    </div>
+                    <button type="submit" class="modal-submit admin-s">EXECUTE MODIFICATION</button>
+                    <div id="adminSuccess" class="success-msg hidden"></div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOAST -->
+    <div id="toast" class="toast hidden"></div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+
+        // ── STATE ──
+        let currentUser = null;
+        const COSTS = { mild:5, goofy:10, normal:20, brutal:50, nuclear:75, god:100 };
+
+        // ── ELEMENTS ──
+        const $ = id => document.getElementById(id);
+        const inputBox   = $('inputBox');
+        const analysisBox = $('analysisBox');
+        const resultBox  = $('resultBox');
+        const targetInput = $('targetName');
+        const linesInput  = $('linesAmount');
+        const speedInput  = $('typingSpeed');
+        const sourcesContainer = $('sourcesContainer');
+        const terminalOutput = $('terminalOutput');
+        const masterStatus = $('masterStatus');
+        const roastOutput  = $('roastOutput');
+        const roastCursor  = $('roastCursor');
+        const resultTierTitle = $('resultTierTitle');
+        const shameList = $('shameList');
+        const navUser = $('navUser');
+        const navTokens = $('navTokens');
+        const userInfo = $('userInfo');
+        const loginModalBtn = $('loginModalBtn');
+        const loginModal = $('loginModal');
+        const adminModal = $('adminModal');
+        const adminDashboard = $('adminDashboard');
+        const adminLoginForm = $('adminLoginForm');
+        const adminError = $('adminError');
+        const adminSuccess = $('adminSuccess');
+
+        // ── DB ──
+        const getDB = () => JSON.parse(localStorage.getItem('roastDB_v2')) || { users: {} };
+        const saveDB = db => localStorage.setItem('roastDB_v2', JSON.stringify(db));
+
+        // ── AUTH ──
+        function login(username) {
+            username = username.toLowerCase().trim();
+            const db = getDB();
+            if (!db.users[username]) {
+                db.users[username] = { tokens: 500 };
+                saveDB(db);
+                showToast('🎉 500 tokens granted — welcome to the grid.');
+            }
+            currentUser = username;
+            localStorage.setItem('currentUser_v2', username);
+            navUser.innerText = username;
+            navTokens.innerText = db.users[username].tokens;
+            loginModalBtn.classList.add('hidden');
+            userInfo.classList.remove('hidden');
+            loginModal.classList.add('hidden');
+        }
+
+        function logout() {
+            currentUser = null;
+            localStorage.removeItem('currentUser_v2');
+            userInfo.classList.add('hidden');
+            loginModalBtn.classList.remove('hidden');
+        }
+
+        function updateTokens(username, amount, action = 'add') {
+            username = username.toLowerCase().trim();
+            const db = getDB();
+            if (!db.users[username]) db.users[username] = { tokens: 0 };
+            db.users[username].tokens = action === 'set'
+                ? parseInt(amount)
+                : db.users[username].tokens + parseInt(amount);
+            saveDB(db);
+            if (currentUser === username) navTokens.innerText = db.users[username].tokens;
+        }
+
+        function checkTokens(n) {
+            if (!currentUser) return false;
+            return getDB().users[currentUser]?.tokens >= n;
+        }
+
+        function deductTokens(n) {
+            if (!currentUser) return;
+            const db = getDB();
+            db.users[currentUser].tokens -= n;
+            saveDB(db);
+            navTokens.innerText = db.users[currentUser].tokens;
+        }
+
+        function showToast(msg) {
+            const t = $('toast');
+            t.innerText = msg;
+            t.classList.remove('hidden');
+            setTimeout(() => t.classList.add('hidden'), 3500);
+        }
+
+        // ── SHAME LIST ──
+        function addShame(target, level) {
+            let h = JSON.parse(localStorage.getItem('roastHistory_v2')) || [];
+            h.unshift({ name: target, level, date: Date.now() });
+            if (h.length > 8) h.pop();
+            localStorage.setItem('roastHistory_v2', JSON.stringify(h));
+            renderShame();
+        }
+
+        const tierColors = { mild:'var(--mild-c)', goofy:'var(--goofy-c)', normal:'var(--normal-c)', brutal:'var(--brutal-c)', nuclear:'var(--nuclear-c)', god:'var(--god-c)' };
+
+        function renderShame() {
+            let h = JSON.parse(localStorage.getItem('roastHistory_v2')) || [];
+            if (!h.length) return;
+            shameList.innerHTML = '';
+            h.forEach(item => {
+                const ago = timeAgo(item.date);
+                const div = document.createElement('div');
+                div.className = 'shame-item';
+                div.innerHTML = `
+                    <span class="shame-name">${item.name}</span>
+                    <span class="shame-tier" style="color:${tierColors[item.level]}">${item.level.toUpperCase()}</span>
+                    <span class="shame-time">${ago}</span>
+                `;
+                shameList.appendChild(div);
+            });
+        }
+
+        function timeAgo(ts) {
+            const s = Math.floor((Date.now() - ts) / 1000);
+            if (s < 60) return `${s}s ago`;
+            if (s < 3600) return `${Math.floor(s/60)}m ago`;
+            return `${Math.floor(s/3600)}h ago`;
+        }
+
+        // ── MODAL EVENTS ──
+        $('loginModalBtn').addEventListener('click', () => loginModal.classList.remove('hidden'));
+        $('adminModalBtn').addEventListener('click', () => adminModal.classList.remove('hidden'));
+        $('logoutBtn').addEventListener('click', logout);
+
+        document.querySelectorAll('.close-modal').forEach(btn => btn.addEventListener('click', () => {
+            loginModal.classList.add('hidden');
+            adminModal.classList.add('hidden');
+        }));
+
+        $('loginForm').addEventListener('submit', e => {
+            e.preventDefault();
+            if ($('loginUsername').value) login($('loginUsername').value);
+        });
+
+        $('dailyRewardBtn').addEventListener('click', () => {
+            if (!currentUser) return;
+            const key = `daily_v2_${currentUser}`;
+            const last = localStorage.getItem(key);
+            const now = Date.now();
+            if (!last || now - parseInt(last) > 86400000) {
+                updateTokens(currentUser, 100, 'add');
+                localStorage.setItem(key, now.toString());
+                showToast('🎁 Daily reward: +100 tokens');
+            } else {
+                showToast('⏳ Daily reward already claimed. Come back tomorrow.');
+            }
+        });
+
+        adminLoginForm.addEventListener('submit', e => {
+            e.preventDefault();
+            const u = $('adminUser').value, p = $('adminPass').value;
+            if (u === 'Admin' && p === '1234') {
+                adminLoginForm.classList.add('hidden');
+                adminDashboard.classList.remove('hidden');
+                adminError.classList.add('hidden');
+            } else {
+                adminError.classList.remove('hidden');
+            }
+        });
+
+        $('tokenForm').addEventListener('submit', e => {
+            e.preventDefault();
+            const target = $('targetUserManage').value;
+            const action = $('tokenAction').value;
+            const amt = $('tokenAmount').value;
+            updateTokens(target, amt, action);
+            adminSuccess.innerText = `✓ ${action === 'set' ? 'Set' : 'Added'} ${amt} tokens for "${target}"`;
+            adminSuccess.classList.remove('hidden');
+            setTimeout(() => adminSuccess.classList.add('hidden'), 3000);
+        });
+
+        // ── SOURCES ──
+        const sources = [
+            { id:'github',    name:'GitHub',    icon:'fa-brands fa-github',    color:'var(--mild-c)',    messages:['Cloning repos...','Scanning commits...','Judging spaghetti code...','Analyzing contribution graph...'] },
+            { id:'twitter',   name:'X/Twitter', icon:'fa-brands fa-x-twitter', color:'var(--goofy-c)',   messages:['Fetching terrible takes...','Analyzing cringe ratio...','Reading deleted tweets...','Mapping echo chamber...'] },
+            { id:'linkedin',  name:'LinkedIn',  icon:'fa-brands fa-linkedin',  color:'var(--normal-c)',  messages:['Parsing buzzwords...','Decoding humblebrags...','Counting endorsements...','Scraping career lies...'] },
+            { id:'instagram', name:'Instagram', icon:'fa-brands fa-instagram', color:'var(--brutal-c)',  messages:['Processing filters...','Detecting fake lifestyle...','Mapping influencer delusion...','Counting bot followers...'] },
+            { id:'reddit',    name:'Reddit',    icon:'fa-brands fa-reddit',    color:'var(--nuclear-c)', messages:['Scanning deleted history...','Unearthing basement opinions...','Extracting failure data...','Reading r/cringe posts...'] },
+        ];
+
+        // ── FORM SUBMIT ──
+        document.getElementById('submitBtn').addEventListener('click', () => {
+            const target = targetInput.value.trim();
+            if (!target) { targetInput.focus(); return; }
+
+            if (!currentUser) { loginModal.classList.remove('hidden'); return; }
+
+            const levelEl = document.querySelector('input[name="roastLevel"]:checked');
+            const level = levelEl ? levelEl.value : 'goofy';
+            const cost = COSTS[level];
+
+            if (!checkTokens(cost)) {
+                const err = $('tokenError');
+                err.classList.remove('hidden');
+                setTimeout(() => err.classList.add('hidden'), 3000);
+                return;
+            }
+
+            const numLines = Math.min(Math.max(parseInt(linesInput.value) || 2, 1), 5);
+            const tSpeed = parseInt(speedInput.value);
+
+            deductTokens(cost);
+            startAnalysis(target, level, numLines, tSpeed);
+        });
+
+        $('resetBtn').addEventListener('click', () => {
+            resultBox.classList.add('hidden');
+            targetInput.value = '';
+            roastOutput.innerHTML = '';
+            inputBox.classList.remove('hidden');
+        });
+
+        // ── ANALYSIS ──
+        async function startAnalysis(target, level, numLines, tSpeed) {
+            inputBox.classList.add('hidden');
+            analysisBox.classList.remove('hidden');
+
+            sourcesContainer.innerHTML = '';
+            terminalOutput.innerHTML = '';
+
+            sources.forEach(src => {
+                sourcesContainer.insertAdjacentHTML('beforeend', `
+                    <div class="source-row" id="src-${src.id}">
+                        <div class="source-meta">
+                            <span class="source-name" style="color:${src.color}">
+                                <i class="${src.icon}"></i> ${src.name}
+                            </span>
+                            <span class="source-pct" style="color:${src.color}" id="pct-${src.id}">0%</span>
+                        </div>
+                        <div class="prog-track">
+                            <div class="prog-fill" id="fill-${src.id}" style="background:${src.color}"></div>
+                        </div>
+                    </div>
+                `);
+            });
+
+            masterStatus.innerText = `[${level.toUpperCase()}] Initialising attack vector for ${target}...`;
+
+            await Promise.all(sources.map(src => simulateSrc(src)));
+
+            masterStatus.innerText = '▶ All vectors acquired. Generating roast via AI core...';
+
+            // Show AI loading in terminal
+            const aiLine = document.createElement('div');
+            aiLine.className = 'term-line info';
+            aiLine.innerHTML = '<div class="ai-loading"><div class="ai-dots"><span></span><span></span><span></span></div> Claude AI generating personalized roast...</div>';
+            terminalOutput.appendChild(aiLine);
+            terminalOutput.scrollTop = terminalOutput.scrollHeight;
+
+            const roast = await generateRoast(target, level, numLines);
+            showResult(target, level, tSpeed, roast);
+        }
+
+        function simulateSrc(src) {
+            return new Promise(resolve => {
+                let progress = 0;
+                const delay = Math.random() * 400;
+                setTimeout(() => {
+                    const iv = setInterval(() => {
+                        progress += Math.random() * 9 + 5;
+                        if (progress >= 100) { progress = 100; clearInterval(iv); }
+
+                        const fill = $(`fill-${src.id}`);
+                        const pct = $(`pct-${src.id}`);
+                        if (fill) fill.style.width = `${progress}%`;
+                        if (pct) pct.innerText = `${Math.floor(progress)}%`;
+
+                        const msgs = src.messages;
+                        const msg = msgs[Math.floor(Math.random() * msgs.length)];
+                        const p = document.createElement('div');
+                        p.className = 'term-line ' + (Math.random() > 0.85 ? 'err' : Math.random() > 0.75 ? 'warn' : 'ok');
+                        p.innerText = `[${src.name.toUpperCase().replace('/','_')}] ${msg} (${Math.floor(progress)}%)`;
+                        terminalOutput.appendChild(p);
+                        terminalOutput.scrollTop = terminalOutput.scrollHeight;
+
+                        if (progress === 100) resolve();
+                    }, Math.random() * 90 + 40);
+                }, delay);
+            });
+        }
+
+        // ── AI ROAST GENERATION ──
+        const tierInstructions = {
+            mild:    "Write a very light, playful, almost friendly roast. Keep it witty but harmless. Think gentle ribbing among friends.",
+            goofy:   "Write an absurd, silly, over-the-top goofy roast. Be creative and ridiculous rather than mean. Think cartoon villain energy.",
+            normal:  "Write a sharp, clever roast with real bite. Sarcastic and pointed but still funny. Think comedy roast show energy.",
+            brutal:  "Write a genuinely brutal, cutting roast. No mercy, all wit. Be savage but intelligent — think the best roast battle lines.",
+            nuclear: "Write an absolutely devastating, world-ending roast. This should feel like the person's entire existence is being dismantled with surgical precision and dark humor.",
+            god:     "Write the most catastrophically devastating roast ever conceived. This is the final form — cosmic humiliation, reality-breaking takedowns, delivered with the cold certainty of a deity passing judgment."
+        };
+
+        async function generateRoast(target, level, numLines) {
+            const prompt = `You are an elite roast comedian. Generate ${numLines} separate roast line(s) about a person named "${target}".
+
+Intensity tier: ${level.toUpperCase()}
+Instructions: ${tierInstructions[level]}
+
+Rules:
+- Each roast line should be 1-3 sentences max
+- Reference their name "${target}" naturally
+- Make it feel personal and specific
+- Be creative, not generic
+- Do NOT include numbering, bullet points, or labels — just the raw roast lines
+- Separate multiple lines with a blank line
+- Keep it as comedy — no actual harmful content
+- Make it FUNNY and memorable
+
+Output ONLY the roast lines, nothing else.`;
+
+            try {
+                const res = await fetch('https://api.anthropic.com/v1/messages', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        model: 'claude-sonnet-4-20250514',
+                        max_tokens: 1000,
+                        messages: [{ role: 'user', content: prompt }]
+                    })
+                });
+                const data = await res.json();
+                const text = data.content?.find(b => b.type === 'text')?.text || '';
+                return text.trim() || fallbackRoast(target, level);
+            } catch (e) {
+                return fallbackRoast(target, level);
+            }
+        }
+
+        function fallbackRoast(target, level) {
+            const fb = {
+                mild: `${target} has all the charisma of a loading screen.`,
+                goofy: `${target} is the human equivalent of stepping on a Lego — briefly painful, immediately forgotten, weirdly still everywhere.`,
+                normal: `Error 404: Talent not found when searching for ${target}.`,
+                brutal: `${target}'s digital footprint is so embarrassing, search engines are in therapy.`,
+                nuclear: `${target} is living proof that the universe occasionally experiences catastrophic system errors.`,
+                god: `The simulation tried to garbage-collect ${target} three patches ago. Somehow they persisted. An unfixable bug in human form.`
+            };
+            return fb[level] || fb.normal;
+        }
+
+        // ── SHOW RESULT ──
+        function showResult(target, level, tSpeed, roast) {
+            analysisBox.classList.add('hidden');
+            resultBox.classList.remove('hidden');
+            resultBox.classList.add('pulse-panel');
+            setTimeout(() => resultBox.classList.remove('pulse-panel'), 3000);
+
+            resultTierTitle.innerText = `${level.toUpperCase()} DESTRUCTION`;
+            resultTierTitle.style.color = tierColors[level];
+            resultTierTitle.style.borderColor = tierColors[level];
+            resultTierTitle.style.textShadow = `0 0 20px ${tierColors[level]}`;
+
+            roastOutput.className = '';
+            if (level === 'nuclear' || level === 'god') {
+                roastOutput.classList.add('glitch-text');
+                setTimeout(() => roastOutput.classList.remove('glitch-text'), 2500);
+            }
+            if (level === 'god') {
+                document.body.classList.add('shake-body');
+                setTimeout(() => document.body.classList.remove('shake-body'), 600);
+            }
+
+            addShame(target, level);
+            typeWrite(roast, tSpeed);
+        }
+
+        // ── TYPEWRITER ──
+        function typeWrite(text, speed) {
+            roastOutput.innerHTML = '';
+            roastCursor.style.display = 'none';
+
+            if (speed === 0) {
+                roastOutput.innerHTML = text.replace(/\n\n/g, '<br><br>').replace(/\n/g, '<br>');
+                return;
+            }
+
+            const html = text.replace(/\n\n/g, '<br><br>').replace(/\n/g, '<br>');
+            roastCursor.style.display = 'inline-block';
+            let i = 0;
+            let inTag = false;
+
+            function tick() {
+                if (i >= html.length) { roastCursor.style.display = 'none'; return; }
+                const ch = html[i];
+                if (ch === '<') inTag = true;
+                roastOutput.innerHTML += ch;
+                i++;
+                if (ch === '>') inTag = false;
+                if (inTag) tick();
+                else setTimeout(tick, speed + Math.random() * (speed * 0.5));
+            }
+            tick();
+        }
+
+        // ── MATRIX BG ──
+        const canvas = $('bgCanvas');
+        const ctx = canvas.getContext('2d');
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%^&*<>/\\|{}[]';
+        const fs = 14;
+        let cols = Math.floor(canvas.width / fs);
+        let drops = Array.from({ length: cols }, () => Math.random() * -50);
+
+        function drawMatrix() {
+            ctx.fillStyle = 'rgba(3,3,8,0.08)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            cols = Math.floor(canvas.width / fs);
+            if (drops.length !== cols) drops = Array.from({ length: cols }, () => 0);
+            ctx.font = `${fs}px Share Tech Mono`;
+
+            drops.forEach((y, i) => {
+                const ch = chars[Math.floor(Math.random() * chars.length)];
+                const alpha = Math.random();
+                if (alpha > 0.95) ctx.fillStyle = '#ffffff';
+                else if (alpha > 0.8) ctx.fillStyle = '#ff2a5f';
+                else ctx.fillStyle = '#00e5ff';
+                ctx.fillText(ch, i * fs, y * fs);
+                if (y * fs > canvas.height && Math.random() > 0.975) drops[i] = 0;
+                drops[i] += 0.5;
+            });
+        }
+
+        setInterval(drawMatrix, 40);
+
+        // ── INIT ──
+        const saved = localStorage.getItem('currentUser_v2');
+        if (saved) login(saved);
+        renderShame();
+    });
+    </script>
+</body>
+</html>
